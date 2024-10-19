@@ -93,6 +93,14 @@ func main() {
 			os.Exit(0)
 		}
 	case "stop":
+		// 프로세스 종료 시그널(SIGTERM) 전송
+		pid, err := stopProcess(config.PidFilePath)
+		if err != nil {
+			fmt.Println(err)
+		} else if pid != 0 {
+			fmt.Printf("Stop %s process (pid: %d)\n", config.ModuleName, pid)
+		}
+		os.Exit(0)
 	default:
 		option.usage()
 		os.Exit(0)
@@ -104,20 +112,21 @@ func main() {
 	// 환경 변수를 체크하여 데몬 프로세스인지 확인
 	if os.Getenv("DAEMON") != "true" {
 		// 프로세스 데몬화
-		if err := process.Daemonize(); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	} else {
-		// 데몬 프로세스인 경우 PID를 파일에 기록
-		err := file.WriteTextFile[int](config.PidFilePath, os.Getpid())
-		if err != nil {
-			fmt.Println(err) // TODO: stdout, stderr 리다이렉트 해줘야함
-			os.Exit(1)
-		}
+		// 데몬화 성공 시 함수 내부에서 프로세스 종료
+		err := process.Daemonize()
+		// 프로세스 데몬화 실패
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	initialization() // 초기화
+
+	// 데몬 프로세스인 경우 PID를 파일에 기록
+	err := file.WriteTextFile[int](config.PidFilePath, os.Getpid())
+	if err != nil {
+		// TODO: 로그 기록
+		os.Exit(1)
+	}
 
 	<-sigChan // 종료 시그널 대기
 
@@ -170,8 +179,45 @@ func isProcessRunWithPidFile(pidFilePath string) bool {
 	return process.IsProcessRunning(pid)
 }
 
+func stopProcess(pidFilePath string) (int, error) {
+	// PID 파일 읽기
+	pidBytes, err := os.ReadFile(pidFilePath)
+	if err != nil {
+		return 0, nil
+	}
+
+	// 파일에서 읽은 PID를 정수로 변환
+	pid, err := strconv.Atoi(string(pidBytes))
+	if err != nil {
+		return 0, nil
+	}
+
+	// 프로세스가 존재하는지 확인
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return 0, nil
+	}
+
+	// 시그널 0을 보내 실제로 프로세스가 동작중인지 확인
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		return 0, nil
+	}
+
+	// SIGTERM 시그널을 보내 프로세스 종료
+	err = process.Signal(syscall.Signal(syscall.SIGTERM))
+	if err != nil {
+		return 0, fmt.Errorf("failed to send signal (pid: %d): %s", pid, err)
+	}
+
+	os.Remove(pidFilePath) // PID 파일 삭제
+
+	return pid, nil
+}
+
 // initialization 초기화 함수
 func initialization() {
+	file.MakeDirectory("var") // var 디렉터리 생성
 }
 
 // finalization 모듈 종료 시 작업 정리 함수

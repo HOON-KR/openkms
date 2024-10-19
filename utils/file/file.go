@@ -38,3 +38,27 @@ func WriteTextFile[T any](filePath string, data T) error {
 
 	return nil
 }
+
+// MakeDirectory 디렉터리 생성 함수
+//
+// Parameters:
+//   - dirPath: 디렉터리 경로
+//
+// Returns:
+//   - error: 성공(nil), 실패(error)
+func MakeDirectory(dirPath string) error {
+	// 디렉터리 상태 정보 획득
+	_, err := os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		// 디렉터리가 존재하지 않으면 생성
+		err := os.MkdirAll(dirPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create directory: %s", err)
+		}
+	} else if err != nil {
+		// 에러 발생
+		return fmt.Errorf("error checking directory: %s", err)
+	}
+
+	return nil
+}
