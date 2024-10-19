@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"openkms/config"
 	"openkms/utils/file"
+	"openkms/utils/log"
 	"openkms/utils/process"
 	"os"
 	"os/signal"
@@ -120,17 +121,18 @@ func main() {
 	}
 
 	initialization() // 초기화
+	defer func() {
+		finalization() // 종료 전 작업 정리
+	}()
 
 	// 데몬 프로세스인 경우 PID를 파일에 기록
 	err := file.WriteTextFile[int](config.PidFilePath, os.Getpid())
 	if err != nil {
-		// TODO: 로그 기록
-		os.Exit(1)
+		log.LogWarn("%s", err)
+		return
 	}
 
 	<-sigChan // 종료 시그널 대기
-
-	finalization() // 종료 전 작업 정리
 }
 
 // changeWorkDir 작업 경로를 현재 실행 파일의 경로로 변경
@@ -222,7 +224,7 @@ func initialization() {
 
 // finalization 모듈 종료 시 작업 정리 함수
 func finalization() {
-
+	log.FinalizeLog() // 로그 자원 정리
 }
 
 // setupSignal 시그널 설정

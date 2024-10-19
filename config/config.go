@@ -15,4 +15,5 @@ const (
 
 const (
 	PidFilePath = "var/" + ModuleName + ".pid"
+	LogFilePath = "log/" + ModuleName + ".log"
 )

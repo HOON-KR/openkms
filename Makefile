@@ -3,7 +3,8 @@ BUILD_TIME=$(shell date "+%Y-%m-%d %H:%M:%S")
 
 BIN_DIR=bin
 GO_MOD_FILE=go.mod
-GO_EXTERN_PACKAGE=
+GO_EXTERN_PACKAGE=go.uber.org/zap \
+				  gopkg.in/natefinch/lumberjack.v2
 
 all: build
 
