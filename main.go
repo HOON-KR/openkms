@@ -108,6 +108,8 @@ func main() {
 	}
 
 	sigChan := make(chan os.Signal, 1)
+	stopChan := make(chan bool)
+
 	setupSignal(sigChan) // 시그널 설정
 
 	// 환경 변수를 체크하여 데몬 프로세스인지 확인
@@ -119,6 +121,13 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	// 종료 시그널 처리
+	go func() {
+		sig := <-sigChan
+		log.LogInfo("Receive SIGNAL: %d", sig)
+		stopChan <- true
+	}()
 
 	initialization() // 초기화
 	defer func() {
@@ -132,7 +141,7 @@ func main() {
 		return
 	}
 
-	<-sigChan // 종료 시그널 대기
+	<-stopChan // 종료 대기
 }
 
 // changeWorkDir 작업 경로를 현재 실행 파일의 경로로 변경
@@ -220,6 +229,8 @@ func stopProcess(pidFilePath string) (int, error) {
 // initialization 초기화 함수
 func initialization() {
 	file.MakeDirectory("var") // var 디렉터리 생성
+	file.MakeDirectory("log") // log 디렉터리 생성
+	log.InitLogger()          // 로거 초기화
 }
 
 // finalization 모듈 종료 시 작업 정리 함수

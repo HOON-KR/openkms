@@ -17,3 +17,11 @@ const (
 	PidFilePath = "var/" + ModuleName + ".pid"
 	LogFilePath = "log/" + ModuleName + ".log"
 )
+
+type Config struct {
+}
+
+// RunOper
+type RunOper struct {
+	IsRunning bool
+}

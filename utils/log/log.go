@@ -12,7 +12,6 @@ package log
 import (
 	"fmt"
 	"openkms/config"
-	"openkms/utils/file"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -26,14 +25,8 @@ type Logger struct {
 
 var logger Logger
 
-// init 패키지 초기화
-func init() {
-	file.MakeDirectory("log") // log 디렉터리 생성
-	initLogger()              // 로거 초기화
-}
-
-// initLogger 로거 초기화
-func initLogger() {
+// InitLogger 로거 초기화
+func InitLogger() {
 	// lumberjack 로테이션 설정
 	logWriter := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   config.LogFilePath, // 로그 파일 경로
